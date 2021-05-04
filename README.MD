@@ -7,7 +7,7 @@ cd /etc/ansible/
 touch hosts
 vi host paste eblw info
 [vama]
-54.169.74.93
+xx.xx.xx.xx
 ansible --list-host all
 ansible all -m ping
 ssh-keygen -t rsa
