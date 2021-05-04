@@ -1,0 +1,30 @@
+---
+  - name: "Playing with Ansible and Git"
+    hosts: localhost
+    tasks:
+    - name: Pull nginx
+      docker_container:
+        name: nginx_container
+        image: nginx
+
+
+
+  
+      # docker:
+      #   name: nginx
+      #   image: nginx
+
+    #   register: "output" 
+    # - debug: var=output.stdout_lines
+    # - name: "Install Nginx"
+    #   docker:
+    #   name: nginx
+    #   image: nginx
+    #   detach: True
+      # ports:
+      #   - 8080:8080
+      # expose:
+      #   - 8080
+      # volumes:
+      #   - /etc/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    

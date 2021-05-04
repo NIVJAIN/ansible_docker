@@ -1,0 +1,30 @@
+---
+  - name: "Playing with Ansible and Git"
+    hosts: localhost
+    # connection: local 
+    tasks:
+    - name: Just Execute a command
+      command: date
+      register: "output" 
+    - debug: var=output.stdout_lines
+
+    - name: Just Execute a script
+      script: script.sh
+      register: "output" 
+
+    - debug: var=output.stdout_lines
+
+    - name: "just execute a ls -lrt command"
+      shell: "ls -lrt"
+      register: "output" 
+
+    - debug: var=output.stdout_lines
+
+    - name: Pull default Docker image
+      docker_image:
+        name: "nginx"
+        source: pull
+      register: "output"
+    - debug: var=output.stdout_lines
+    
+    # ansible-playbook -i ./hosts 2-localplaybook.yaml

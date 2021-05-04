@@ -1,0 +1,93 @@
+---
+- hosts: vama
+  vars:
+    drupal_port: "80"
+    nginx_port: "80"
+    mysql_port: "3306"
+    mysql_root_pass: jain2020
+    docker_network: ansible_net
+  gather_facts: no
+  remote_user: ubuntu
+  become: yes
+  tasks:
+    # - name: Install docker and some dependencies
+    #   apt:
+    #     name: python3-pip, docker.io
+    #     state: present
+
+    # - name: Start docker service
+    #   service:
+    #     name: docker
+    #     state: started
+
+    # - name: Install docker python module
+    #   pip:
+    #     name: docker
+    - name: "Create a network"
+      docker_network:
+        name: "{{ docker_network }}"
+
+    - name: Build an image and push
+      docker_image:
+        build:
+          path: ./nginx
+        name: nivjain/nginx
+        tag: v1
+        force_source: yes
+        push: yes
+        source: build
+      delegate_to: 127.0.0.1
+      become: no  
+      register: "output" 
+    - debug: var=output.stdout_lines
+
+    - name: Create Drupal container
+      docker_container:
+        name: drupal
+        image: drupal
+        state: started
+        recreate: yes
+        exposed_ports:
+          - "{{ drupal_port }}"
+        volumes:
+          - drupal_modules:/var/www/html/modules
+          - drupal_profiles:/var/www/html/profiles
+          - drupal_themes:/var/www/html/themes
+          - drupal_sites:/var/www/html/sites
+
+    - name: Create Mysql container
+      docker_container:
+        name: mysql
+        image: mysql
+        state: started
+        recreate: yes
+        env:
+          MYSQL_ROOT_PASSWORD: "{{ mysql_root_pass }}"
+        exposed_ports:
+          - "{{ mysql_port }}"
+        volumes:
+          - db_datta:/var/lib/minesql/data
+          
+
+    - name: Create nginx container
+      docker_container:
+        name: nginx
+        # image: nivjain/nginx:v1
+        image: nginx
+        state: started
+        recreate: yes
+        networks:
+          - name: "{{ docker_network }}"
+        links:
+          - "drupal:drupal"
+        published_ports:
+          - "{{ nginx_port }}:{{ nginx_port }}"
+          
+    - name: Add a container to a network, leaving existing containers connected
+      docker_network:
+        name: "{{ docker_network }}"
+        connected:
+          - mysql
+        appends: yes
+
+# ansible-playbook -i ~/hosts 4-ubuntu-nginx.yaml --ask-vault-pass
