@@ -83,11 +83,11 @@
         published_ports:
           - "{{ nginx_port }}:{{ nginx_port }}"
           
-    - name: Add a container to a network, leaving existing containers connected
-      docker_network:
-        name: "{{ docker_network }}"
-        connected:
-          - mysql
-        appends: yes
+    # - name: Add a container to a network, leaving existing containers connected
+    #   docker_network:
+    #     name: "{{ docker_network }}"
+    #     connected:
+    #       - mysql
+    #     appends: yes
 
 # ansible-playbook -i ~/hosts 4-ubuntu-nginx.yaml --ask-vault-pass

@@ -6,14 +6,24 @@ sudo mkdir /etc/ansible
 cd /etc/ansible/
 touch hosts
 vi host paste eblw info
-[vama]
-xx.xx.xx.xx
+#hosts file start#
+    [vama:vars]
+    ansible_ssh_private_key_file=./vamakp.pem
+    [vama]
+    54.xx.69.x4.9x
+#hosts file ends#
 ansible --list-host all
 ansible all -m ping
+step1 or step2
+step1
 ssh-keygen -t rsa
 id_rsa.pub
 from local machine
 ssh-copy-id ipofubuntu
+
+step2
+ more ~/.ssh/id_rsa.pub
+ copy the contect to ubuntu under ~/.ssh/authorized_keys
 ```
 
 # Ubuntu Ansible installation
@@ -36,3 +46,6 @@ ansible -i hosts all -m yum -a 'name=ncdu state=present'
 In the below example the same command was issued to remove the previously installed ncdu package.
 ansible -i hosts all -m yum -a 'name=ncdu state=absent'
 ```
+
+# Run via playbook
+ansible-playbook -i ~/hosts 4-ubuntu-nginx.yaml
