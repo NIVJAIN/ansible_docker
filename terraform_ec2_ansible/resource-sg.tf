@@ -9,6 +9,12 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
+    from_port   = 15672
+    to_port     = 15672
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
@@ -29,19 +35,39 @@ resource "aws_security_group" "alb" {
 }
 
 resource "aws_security_group" "nginx" {
-  name   = "terraform-ansible-sg"
-  vpc_id = local.vpc_id
+  depends_on = [aws_security_group.alb]
+  name       = "terraform-ansible-sg"
+  vpc_id     = local.vpc_id
   ingress {
     from_port   = 8080
     to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["116.86.133.133/32"]
   }
-   ingress {
-    from_port   = 8080
-    to_port     = 8080
+  ingress {
+    from_port   = 15672
+    to_port     = 15672
     protocol    = "tcp"
-    security_groups = ["aws_security_group.alb.id"]
+    cidr_blocks = ["116.86.133.133/32"]
+  }
+  ingress {
+    from_port   = 15672
+    to_port     = 15672
+    protocol    = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+  ingress {
+    from_port   = 5672
+    to_port     = 5672
+    protocol    = "tcp"
+    cidr_blocks = ["116.86.133.133/32",]
+    security_groups = [aws_security_group.alb.id]
+  }
+  ingress {
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
   }
   ingress {
     from_port   = 22

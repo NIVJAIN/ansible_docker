@@ -1,18 +1,19 @@
 locals {
-  vpc_id           = "vpc-028b7724ac0331752"
-  ubuntu_ami       = "ami-0d058fe428540cd89"
-  amazonlinux_ami  = "ami-02a3575cbd0c8c096" # amzon linux */
-  subnet_id        = "subnet-08b1ad0d7506dca3f"
-  ssh_user         = "ubuntu"
-  key_name         = "vamakp"
+  vpc_id          = "vpc-028b7724ac0331752"
+  ubuntu_ami      = "ami-0d058fe428540cd89"
+  amazonlinux_ami = "ami-02a3575cbd0c8c096" # amzon linux */
+  subnet_id       = "subnet-08b1ad0d7506dca3f"
+  ssh_user        = "ubuntu"
+  key_name        = "vamakp"
   /* private_key_path = "~/PEM/gcc/AIKFUNG/vamakp.pem" */
   private_key_path = "./vamakp.pem"
-  instance_name = "terraform-ansible"
-  schedule = "true"
-  project = "terraform-ansible"
-  requestor = "jain"
-  creator = "jain-terraform"
-  public_subnets = ["subnet-08b1ad0d7506dca3f", "subnet-0e13dde65836782b9"]
+  instance_name    = "terraform-ansible"
+  schedule         = "true"
+  project          = "terraform-ansible"
+  requestor        = "jain"
+  creator          = "jain-terraform"
+  public_subnets   = ["subnet-08b1ad0d7506dca3f", "subnet-0e13dde65836782b9"]
+  domain_name      = "aipo-imda.net"
 }
 
 provider "aws" {
@@ -67,11 +68,11 @@ resource "aws_instance" "nginx" {
   key_name                    = local.key_name
 
   tags = {
-    Name = local.instance_name
+    Name      = local.instance_name
     Scheduled = local.schedule
-    Project = local.project
+    Project   = local.project
     Requestor = local.requestor
-    Creator = local.creator
+    Creator   = local.creator
   }
   provisioner "remote-exec" {
     inline = ["echo 'Wait until SSH is ready'"]
@@ -85,6 +86,9 @@ resource "aws_instance" "nginx" {
   }
   provisioner "local-exec" {
     command = "ansible-playbook  -i ${aws_instance.nginx.public_ip}, --private-key ${local.private_key_path} nginx.yaml"
+  }
+  provisioner "local-exec" {
+    command =  "echo ssh -i vamakp.pem ubuntu@${aws_instance.nginx.public_ip} > ubuntu.sh"
   }
 }
 

@@ -12,5 +12,6 @@
     # playbook_dir: 
     # docker_remote_app_dir: /tmp/helloworld
     docker_remote_app_dir: /home/ubuntu/nginx-docker-compose
+    rabbitmq_cluster_dir: /home/ubuntu/rabbitmq-cluster_docker_compose
   roles:
   - nginx
