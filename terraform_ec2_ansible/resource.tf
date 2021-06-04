@@ -7,13 +7,21 @@ locals {
   key_name         = "vamakp"
   /* private_key_path = "~/PEM/gcc/AIKFUNG/vamakp.pem" */
   private_key_path = "./vamakp.pem"
+  instance_name = "terraform-ansible"
+  schedule = "true"
+  project = "terraform-ansible"
+  requestor = "jain"
+  creator = "jain-terraform"
+  public_subnets = ["subnet-08b1ad0d7506dca3f", "subnet-0e13dde65836782b9"]
 }
 
 provider "aws" {
   region = "ap-southeast-1"
 }
 
-resource "aws_security_group" "nginx" {
+
+
+/* resource "aws_security_group" "nginx" {
   name   = "terraform-ansible-sg"
   vpc_id = local.vpc_id
   ingress {
@@ -47,7 +55,7 @@ resource "aws_security_group" "nginx" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-}
+} */
 
 resource "aws_instance" "nginx" {
   /* ami = "ami-02a3575cbd0c8c096" # amzon linux */
@@ -58,6 +66,13 @@ resource "aws_instance" "nginx" {
   security_groups             = [aws_security_group.nginx.id]
   key_name                    = local.key_name
 
+  tags = {
+    Name = local.instance_name
+    Scheduled = local.schedule
+    Project = local.project
+    Requestor = local.requestor
+    Creator = local.creator
+  }
   provisioner "remote-exec" {
     inline = ["echo 'Wait until SSH is ready'"]
 
@@ -76,5 +91,9 @@ resource "aws_instance" "nginx" {
 output "nginx_ip" {
   value = aws_instance.nginx.public_ip
 }
+
+/* output "anible_playbook_run_command" {
+  value = provisioner.local-exec
+} */
 
 /* ansible-playbook  -i 18.138.254.157, --private-key vamakp.pem nginx.yaml */
