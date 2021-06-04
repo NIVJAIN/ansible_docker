@@ -9,5 +9,8 @@
     docker_compose_version: "1.27.4"
     ansible_user: "ubuntu"
     default_container_image: nginx
+    # playbook_dir: 
+    # docker_remote_app_dir: /tmp/helloworld
+    docker_remote_app_dir: /home/ubuntu/nginx-docker-compose
   roles:
   - nginx
