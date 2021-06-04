@@ -9,6 +9,12 @@ resource "aws_security_group" "alb" {
     cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+  ingress {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
@@ -30,6 +36,12 @@ resource "aws_security_group" "nginx" {
     to_port     = 8080
     protocol    = "tcp"
     cidr_blocks = ["116.86.133.133/32"]
+  }
+   ingress {
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    security_groups = ["aws_security_group.alb.id"]
   }
   ingress {
     from_port   = 22

@@ -40,7 +40,7 @@ resource "aws_alb" "alb" {
 
 resource "aws_alb_listener" "alb_listener" {
   load_balancer_arn = aws_alb.alb.arn
-  port              = 80
+  port              = 8080
   protocol          = "HTTP"
 
   default_action {
@@ -56,5 +56,5 @@ resource "aws_lb_target_group_attachment" "test" {
 }
 
 output "aws_alb" {
-  value = aws_alb.alb.arn
+  value = aws_alb.alb.dns_name
 }
