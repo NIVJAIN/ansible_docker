@@ -3,3 +3,5 @@ vamakp.pem
 **vamakp.pem
 ***vamakp.pem
 /terraform_ec2_ansible/vamakp*
+/terraform_ec2_ansible/.terra*
+/terraform_ec2_ansible/terra*
