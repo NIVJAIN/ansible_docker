@@ -1,0 +1,13 @@
+---
+- name: Install Nginx
+  hosts: all
+  remote_user: ubuntu
+  become: yes
+  vars:
+    nginx_container_port: "8080"
+    nginx_port: "80"
+    docker_compose_version: "1.27.4"
+    ansible_user: "ubuntu"
+    default_container_image: nginx
+  roles:
+  - nginx

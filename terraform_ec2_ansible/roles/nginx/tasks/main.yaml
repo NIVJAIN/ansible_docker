@@ -1,0 +1,77 @@
+---
+- name: Just Execute a command
+  command: date
+  register: "output" 
+- debug: var=output.stdout_lines
+
+- name: "just execute a ls -lrt command"
+  shell: "ls -lrta"
+  register: "output"
+
+- name: Install required system packages
+  apt: name={{ item }} state=latest update_cache=yes
+  loop: [ 'apt-transport-https', 'ca-certificates', 'curl', 'software-properties-common', 'python3-pip', 'virtualenv', 'python3-setuptools']
+
+- name: Add an apt signing key for Docker
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Add apt repository for stable version
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+    state: present
+
+- name: Install Docker
+  apt:
+    name: "{{ packages }}"
+    state: present
+    update_cache: yes
+  vars:
+    packages:
+    - docker-ce
+    - docker-ce-cli 
+    - containerd.io
+
+- name: Install Docker SDK for Python
+  pip:
+    name: "docker" 
+  become: yes
+
+- name: Download docker-compose {{ docker_compose_version }}
+  get_url:
+    url : https://github.com/docker/compose/releases/download/{{ docker_compose_version }}/docker-compose-Linux-x86_64
+    dest: ~/docker-compose
+    mode: '+x'
+
+- name: Check docker-compose exists
+  stat: path=~/docker-compose
+  register: docker_compose
+
+- name: Move docker-compose to /usr/local/bin/docker-compose
+  command: mv ~/docker-compose /usr/local/bin/docker-compose
+  when: docker_compose.stat.exists
+
+- name: Add user to docker group
+  user:
+    name: "{{ansible_user}}"
+    group: docker
+
+- name: Pull default Docker image
+  docker_image:
+    name: "{{ default_container_image }}"
+    source: pull
+
+- name: Install Nginx
+  docker_container:
+    name: nginx
+    image: nginx
+    detach: True
+    ports:
+      - "8080:80"
+    expose:
+      - "8080"
+    # volumes:
+      # - /etc/docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+
+

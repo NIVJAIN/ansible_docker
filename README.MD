@@ -49,3 +49,19 @@ ansible -i hosts all -m yum -a 'name=ncdu state=absent'
 
 # Run via playbook
 ansible-playbook -i ~/hosts 4-ubuntu-nginx.yaml
+
+
+## Only  local host
+For some reason, I don’t want to run this playbook on any of remote hosts yet. I want to test it locally and run it locally.  What should I do?
+
+All you should do is this
+
+ansible-playbook \
+--connection=local \ 
+--inventory 127.0.0.1, \
+--limit 127.0.0.1 Ansible-Local.yml -i ansible_hosts
+
+
+## List all hosts
+ansible all --list-hosts -i ansible_hosts   [ansible_hosts is the file in the directory]
+ansible all --list-hosts  [hosts file could be in /etc/ansible/hosts]

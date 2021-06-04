@@ -1,0 +1,26 @@
+---
+- hosts: vama
+  vars:
+    nginx_container_port: "8080"
+    nginx_port: "80"
+  gather_facts: no
+  remote_user: ubuntu
+  become: yes
+  tasks:
+
+  - name: Create nginx container
+    docker_container:
+      name: nginx
+      # image: nivjain/nginx:v1
+      image: nginx
+      state: started
+      recreate: yes
+      published_ports:
+        - "{{ nginx_container_port }}:{{ nginx_port }}"
+
+  - name: "just execute a ls -lrt command"
+    shell: "docker ps -a"
+    register: "output" 
+
+  - debug: var=output.stdout_lines
+# ansible-playbook -i ~/hosts 5-vama-playbook.yaml --ask-vault-pass

@@ -20,6 +20,11 @@
     #     name: docker
     #     state: started
 
+    # - name: Auto Start docker service
+    #   service:
+    #     name: docker
+    #     enabled: true
+    
     # - name: Install docker python module
     #   pip:
     #     name: docker

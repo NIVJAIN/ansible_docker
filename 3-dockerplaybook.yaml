@@ -1,11 +1,23 @@
+#  ansible-playbook -i ~/hosts 3-dockerplaybook.yaml   
 ---
   - name: "Playing with Ansible and Git"
-    hosts: localhost
+    hosts: all
+    connection: local
     tasks:
     - name: Pull nginx
       docker_container:
         name: nginx_container
         image: nginx
+    - name: run command locally
+      command: date
+      register: "output"
+    - name: run command locally
+      command: docker ps -a
+      register: "output"
+    - name: "just execute a ls -lrt command"
+      shell: "ls -lrt"
+      register: "output"
+    - debug: var=output.stdout_lines
 
 
 
