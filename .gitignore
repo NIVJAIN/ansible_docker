@@ -2,6 +2,14 @@ vamakp.pem
 *vama
 **vamakp.pem
 ***vamakp.pem
+/*/.terra*
+/*/terra*
+/**/.terra*
+/**/terra*
+
 /terraform_ec2_ansible/vamakp*
 /terraform_ec2_ansible/.terra*
 /terraform_ec2_ansible/terra*
+/loops_terraform/.terra*
+/loops_terraform/terra*
+/tut-tf-loop/.terra*

@@ -9,7 +9,9 @@ data "aws_acm_certificate" "ecs_domain_certificate" {
   most_recent = true
 }
 resource "aws_route53_record" "ecs_load_balancer_record" {
-  name    = "${local.domain_host_name}.${local.domain_name}"
+  count         = "${length(values(var.services_map))}"
+  /* name    = "${local.domain_host_name}.${local.domain_name}" */
+  name = "${element(keys(var.services_map), count.index)}.${local.domain_name}"
   type    = "A"
   zone_id = data.aws_route53_zone.ecs_domain.zone_id
 
@@ -20,7 +22,7 @@ resource "aws_route53_record" "ecs_load_balancer_record" {
   }
 }
 
-output "route53" {
+output "route53-2" {
   value = data.aws_acm_certificate.ecs_domain_certificate
 }
 

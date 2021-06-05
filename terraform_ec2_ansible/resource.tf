@@ -1,4 +1,5 @@
 locals {
+  name            = "terraform-ansible"
   vpc_id          = "vpc-028b7724ac0331752"
   ubuntu_ami      = "ami-0d058fe428540cd89"
   amazonlinux_ami = "ami-02a3575cbd0c8c096" # amzon linux */
@@ -15,49 +16,26 @@ locals {
   public_subnets   = ["subnet-08b1ad0d7506dca3f", "subnet-0e13dde65836782b9"]
   domain_name      = "aipo-imda.net"
   domain_host_name = "rabbitmq"
+  backend_proto    = "HTTP"
+  health_check =  {
+    healthy_threshold   = 2
+    unhealthy_threshold = 5
+    timeout             = 5
+    interval            = 10
+    path                = "/"
+  }
+}
+variable "services_map" {
+   default = {
+    "nginx" = "8080"
+    "rabbit"    = "15672"
+  } 
 }
 
 provider "aws" {
   region = "ap-southeast-1"
 }
 
-
-
-/* resource "aws_security_group" "nginx" {
-  name   = "terraform-ansible-sg"
-  vpc_id = local.vpc_id
-  ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = ["116.86.133.133/32"]
-  }
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["116.86.133.133/32"]
-  }
-  ingress {
-    from_port       = 22
-    to_port         = 22
-    protocol        = "tcp"
-    security_groups = ["sg-021bf7f871be99f3e", "sg-05057e074f565c0fa", "sg-0cc362e87c48e58ce"]
-  }
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["10.196.250.8/32"]
-  }
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-} */
 
 resource "aws_instance" "nginx" {
   /* ami = "ami-02a3575cbd0c8c096" # amzon linux */
@@ -101,4 +79,5 @@ output "nginx_ip" {
   value = provisioner.local-exec
 } */
 
-/* ansible-playbook  -i 18.138.254.157, --private-key vamakp.pem nginx.yaml */
+/* testing */
+/* ansible-playbook  -i 18.138.254.157, --private-key vamakp.pem nginx.yaml */ 

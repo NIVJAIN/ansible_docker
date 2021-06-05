@@ -1,6 +1,6 @@
 resource "aws_alb" "alb" {
   depends_on         = [aws_security_group.alb]
-  name               = "terraform-alb-tf"
+  name               = format("%s-%s", local.name, "alb")
   subnets            = local.public_subnets
   load_balancer_type = "application"
   security_groups    = [aws_security_group.alb.id]
@@ -16,41 +16,54 @@ resource "aws_alb" "alb" {
 }
 
 resource "aws_alb_target_group" "alb_target_group" {
-  name     = "terraform-ansible-targetgroup"
-  port     = "8080"
-  protocol = "HTTP"
-  vpc_id   = local.vpc_id
-  tags = {
-    name = "terrafomr-ansible-targetgroup"
-  }
-  #   stickiness {    
-  #     type            = "lb_cookie"    
-  #     cookie_duration = 1800    
-  #     enabled         = "${var.target_group_sticky}"  
-  #   }   
+  count     = "${length(keys(var.services_map))}"
+  name      = "${element(keys(var.services_map), count.index)}-Dev"
+  port      = "${element(values(var.services_map), count.index)}"
+  protocol  = "HTTP"
+  vpc_id    = local.vpc_id
   health_check {
     healthy_threshold   = 3
     unhealthy_threshold = 10
     timeout             = 5
     interval            = 10
     path                = "/"
-    port                = "8080"
   }
 }
 
 resource "aws_alb_listener" "alb_listener" {
-  load_balancer_arn = aws_alb.alb.arn
+  load_balancer_arn = "${aws_alb.alb.id}"
+  
   port              = 443
   protocol          = "HTTPS"
-  /* ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01" */
-  ssl_policy = "ELBSecurityPolicy-TLS-1-2-Ext-2018-06"
-    /* ssl_policy = "" */
-  // certificate_arn   = data.aws_acm_certificate.ecs_domain_certificate.arn
   certificate_arn   = data.aws_acm_certificate.ecs_domain_certificate.arn
+  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-Ext-2018-06"
 
   default_action {
-    target_group_arn = aws_alb_target_group.alb_target_group.arn
+    target_group_arn = "${aws_alb_target_group.alb_target_group.0.arn}"
     type             = "forward"
+  }
+}
+
+
+resource "aws_alb_listener_rule" "alb_listener_rabbitmq" {
+  depends_on   = [aws_alb.alb]
+  count         = "${length(values(var.services_map))}"
+  listener_arn = aws_alb_listener.alb_listener.arn
+
+  action {
+    /* target_group_arn = aws_alb_target_group.rabbitmq_alb_target_group.arn */
+    target_group_arn = "${element(aws_alb_target_group.alb_target_group.*.arn, count.index)}"
+    type             = "forward"
+  }
+  condition {
+    host_header {
+    /* field = "host-header" */
+      /* values = ["${lower(local.ecs_service_name)}.${data.terraform_remote_state.platform.outputs.ecs_domain_name}"] */
+      /* values = ["${each.value.tags.Name}.${local.domain_name}"] */
+      # values = ["${lower(local.ecs_service_name)}.vama-dsl.com"]
+      #  values = ["${element(values(var.services_map), count.index)}.${var.domain}"]
+      values = ["${element(keys(var.services_map), count.index)}.${local.domain_name}"]
+    }
   }
 }
 
@@ -71,12 +84,19 @@ resource "aws_lb_listener" "redirect-http-https" {
   }
 }
 
-
-
+/* 
 resource "aws_lb_target_group_attachment" "test" {
   target_group_arn = aws_alb_target_group.alb_target_group.arn
   target_id        = aws_instance.nginx.id
   port             = 8080
+} */
+
+resource "aws_alb_target_group_attachment" "test" {
+  count         = "${length(values(var.services_map))}"
+  target_group_arn = "${element(aws_alb_target_group.alb_target_group.*.arn, count.index)}"
+  /* target_id        = "${element(var.instance_list, count.index)}"  only for multiple instaces*/
+  target_id        = aws_instance.nginx.id
+  port             = "${element(values(var.services_map), count.index)}"
 }
 
 output "aws_alb" {
