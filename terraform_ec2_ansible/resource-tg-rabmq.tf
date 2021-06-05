@@ -20,16 +20,25 @@ resource "aws_alb_target_group" "rabbitmq_alb_target_group" {
     port                = "15672"
   }
 }
-resource "aws_alb_listener" "alb_listener_rabbitmq" {
-  load_balancer_arn = aws_alb.alb.arn
-  port              = 15672
-  protocol          = "HTTP"
+resource "aws_alb_listener_rule" "alb_listener_rabbitmq" {
+  depends_on         = [aws_alb.alb]
+  listener_arn = aws_alb_listener.alb_listener.arn
 
-  default_action {
+  action {
     target_group_arn = aws_alb_target_group.rabbitmq_alb_target_group.arn
     type             = "forward"
   }
+    condition {
+    host_header {
+      /* values = ["${lower(local.ecs_service_name)}.${data.terraform_remote_state.platform.outputs.ecs_domain_name}"] */
+      values = ["${local.domain_host_name}.${local.domain_name}"]
+      # values = ["${lower(local.ecs_service_name)}.vama-dsl.com"]
+      #  values = ["${element(values(var.services_map), count.index)}.${var.domain}"]
+    }
+  }
 }
+
+
 
 resource "aws_lb_target_group_attachment" "rabbitmq" {
   target_group_arn = aws_alb_target_group.rabbitmq_alb_target_group.arn

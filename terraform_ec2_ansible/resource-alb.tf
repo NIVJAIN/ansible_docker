@@ -1,3 +1,20 @@
+resource "aws_alb" "alb" {
+  depends_on         = [aws_security_group.alb]
+  name               = "terraform-alb-tf"
+  subnets            = local.public_subnets
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb.id]
+  internal           = false
+  idle_timeout       = 80 #default is 60 
+  tags = {
+    Name = "terraform-ansible-alb-tf"
+  }
+  #   access_logs {    
+  #     bucket = "${var.s3_bucket}"    
+  #     prefix = "ELB-logs"  
+  #   }
+}
+
 resource "aws_alb_target_group" "alb_target_group" {
   name     = "terraform-ansible-targetgroup"
   port     = "8080"
@@ -21,33 +38,40 @@ resource "aws_alb_target_group" "alb_target_group" {
   }
 }
 
-resource "aws_alb" "alb" {
-  depends_on         = [aws_security_group.alb]
-  name               = "terraform-alb-tf"
-  subnets            = local.public_subnets
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb.id]
-  internal           = false
-  idle_timeout       = 80 #default is 60 
-  tags = {
-    Name = "terraform-ansible-alb-tf"
-  }
-  #   access_logs {    
-  #     bucket = "${var.s3_bucket}"    
-  #     prefix = "ELB-logs"  
-  #   }
-}
-
 resource "aws_alb_listener" "alb_listener" {
   load_balancer_arn = aws_alb.alb.arn
-  port              = 8080
-  protocol          = "HTTP"
+  port              = 443
+  protocol          = "HTTPS"
+  /* ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01" */
+  ssl_policy = "ELBSecurityPolicy-TLS-1-2-Ext-2018-06"
+    /* ssl_policy = "" */
+  // certificate_arn   = data.aws_acm_certificate.ecs_domain_certificate.arn
+  certificate_arn   = data.aws_acm_certificate.ecs_domain_certificate.arn
 
   default_action {
     target_group_arn = aws_alb_target_group.alb_target_group.arn
     type             = "forward"
   }
 }
+
+resource "aws_lb_listener" "redirect-http-https" {
+  load_balancer_arn = aws_alb.alb.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type = "redirect"
+
+    redirect {
+      port        = "443"
+      protocol    = "HTTPS"
+      status_code = "HTTP_301"
+    }
+
+  }
+}
+
+
 
 resource "aws_lb_target_group_attachment" "test" {
   target_group_arn = aws_alb_target_group.alb_target_group.arn

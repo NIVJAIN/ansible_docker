@@ -14,6 +14,7 @@ locals {
   creator          = "jain-terraform"
   public_subnets   = ["subnet-08b1ad0d7506dca3f", "subnet-0e13dde65836782b9"]
   domain_name      = "aipo-imda.net"
+  domain_host_name = "rabbitmq"
 }
 
 provider "aws" {
