@@ -1,0 +1,109 @@
+locals {
+  name            = "django"
+  vpc_id          = "vpc-028b7724ac0331752"
+  ubuntu_ami      = "ami-0d058fe428540cd89"
+  amazonlinux_ami = "ami-02a3575cbd0c8c096" # amzon linux */
+  subnet_id       = "subnet-08b1ad0d7506dca3f"
+  ssh_user        = "ubuntu"
+  key_name        = "vamakp"
+  /* private_key_path = "~/PEM/gcc/AIKFUNG/vamakp.pem" */
+  private_key_path = "./vamakp.pem"
+  instance_name    = "terraform-ansible"
+  schedule         = "true"
+  project          = "terraform-ansible"
+  requestor        = "jain"
+  creator          = "jain-terraform"
+  public_subnets   = ["subnet-08b1ad0d7506dca3f", "subnet-0e13dde65836782b9"]
+  domain_name      = "aipo-imda.net"
+  domain_host_name = "rabbitmq"
+  services         = ["nginx", "rabbit"]
+  environment      = "Dev"
+  backend_proto    = "HTTP"
+  health_check = {
+    healthy_threshold   = 2
+    unhealthy_threshold = 5
+    timeout             = 5
+    interval            = 10
+    path                = "/"
+  }
+}
+variable "hosts" {
+  description = "This hosts will be added as dns names and rules for forwarding traffic"
+  default = {
+    "nginx" = "nginxweb"
+    "rabbit"    = "rabbitmq"
+  }
+}
+
+// Please keep the same order on maps here and above
+variable "ports" {
+  description = "This ports will be used in the ALB listener definition for each service"
+  default = {
+    "nginx" = "80"
+    "rabbit"    = "8080"
+  }
+}
+
+
+
+provider "aws" {
+  region = "ap-southeast-1"
+}
+variable "services" {
+  /* type       = "list" */
+  description = "List of services where traffic of the matching hosts will be forwarded"
+  default    = ["nginx", "rabbit"]
+}
+
+
+resource "aws_instance" "nginx" {
+  /* ami = "ami-02a3575cbd0c8c096" # amzon linux */
+  /* name = format("%s-%s", local.name, "ec2") */
+  ami                         = local.ubuntu_ami # ubuntu20
+  subnet_id                   = local.subnet_id
+  instance_type               = "t2.micro"
+  associate_public_ip_address = true
+  security_groups             = [aws_security_group.nginx.id]
+  key_name                    = local.key_name
+
+  tags = {
+    Name      = local.name
+    Scheduled = local.schedule
+    Project   = local.project
+    Requestor = local.requestor
+    Creator   = local.creator
+  }
+}
+
+resource "aws_alb" "alb" {
+  depends_on         = [aws_security_group.alb]
+  name               = format("%s-%s", local.name, "alb")
+  subnets            = local.public_subnets
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb.id]
+  internal           = false
+  idle_timeout       = 80 #default is 60 
+  tags = {
+    Name = "terraform-ansible-alb-tf"
+  }
+  #   access_logs {    
+  #     bucket = "${var.s3_bucket}"    
+  #     prefix = "ELB-logs"  
+  #   }
+}
+
+resource "aws_alb_target_group" "main" {
+  count        = "${length(var.services)}"
+  name         = "${var.services[count.index]}-Dev"
+  /* port         = "${values(var.ports[count.index])}" */
+   port         = "${var.ports[count.index]}"
+  protocol     = "${local.backend_proto}"
+  vpc_id       = "${local.vpc_id}"
+  health_check  {
+    healthy_threshold   = 3
+    unhealthy_threshold = 10
+    timeout             = 5
+    interval            = 10
+    path                = "/"
+  }
+}
