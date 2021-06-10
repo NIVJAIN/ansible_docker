@@ -1,3 +1,20 @@
+variable "hosts2" {
+  description = "This hosts will be added as dns names and rules for forwarding traffic if you are not sure ask jain"
+  /* type        = list(map(string)) */
+  default = {
+    "nginx" = {
+      "tgport"  = "80"
+      "tgproto" = "HTTP"
+    },
+    "rabbit" = {
+      "tgport"  = "15672"
+      "tgproto" = "HTTP"
+    }
+  }
+}
+
+
+
 resource "aws_alb" "alb" {
   depends_on         = [aws_security_group.alb]
   name               = format("%s-%s", local.name, "alb")
@@ -7,7 +24,10 @@ resource "aws_alb" "alb" {
   internal           = false
   idle_timeout       = 80 #default is 60 
   tags = {
-    Name = "terraform-ansible-alb-tf"
+    Name = "${local.name}-ALB"
+    Project   = local.project
+    Requestor = local.requestor
+    Creator   = local.creator
   }
   #   access_logs {    
   #     bucket = "${var.s3_bucket}"    
@@ -15,12 +35,13 @@ resource "aws_alb" "alb" {
   #   }
 }
 
+
 resource "aws_alb_target_group" "alb_target_group" {
-  count     = "${length(keys(var.services_map))}"
-  name      = "${element(keys(var.services_map), count.index)}-Dev"
-  port      = "${element(values(var.services_map), count.index)}"
-  protocol  = "HTTP"
-  vpc_id    = local.vpc_id
+  for_each = var.hosts2
+  name     = "${each.key}-Dev"
+  port     = each.value.tgport
+  protocol = each.value.tgproto
+  vpc_id   = local.vpc_id
   health_check {
     healthy_threshold   = 3
     unhealthy_threshold = 10
@@ -28,18 +49,24 @@ resource "aws_alb_target_group" "alb_target_group" {
     interval            = 10
     path                = "/"
   }
+    tags = {
+    Name      = each.key
+    Port = each.value.tgport
+  }
 }
 
+
 resource "aws_alb_listener" "alb_listener" {
-  load_balancer_arn = "${aws_alb.alb.id}"
-  
-  port              = 443
-  protocol          = "HTTPS"
-  certificate_arn   = data.aws_acm_certificate.ecs_domain_certificate.arn
-  ssl_policy        = "ELBSecurityPolicy-TLS-1-2-Ext-2018-06"
+  # for_each = aws_alb_target_group.alb_target_group
+  depends_on = [aws_alb_target_group.alb_target_group]
+  load_balancer_arn = aws_alb.alb.id
+  port            = 443
+  protocol        = "HTTPS"
+  certificate_arn = data.aws_acm_certificate.ecs_domain_certificate.arn
+  ssl_policy      = "ELBSecurityPolicy-TLS-1-2-Ext-2018-06"
 
   default_action {
-    target_group_arn = "${aws_alb_target_group.alb_target_group.0.arn}"
+    target_group_arn = aws_alb_target_group.alb_target_group["nginx"].arn
     type             = "forward"
   }
 }
@@ -47,22 +74,25 @@ resource "aws_alb_listener" "alb_listener" {
 
 resource "aws_alb_listener_rule" "alb_listener_rabbitmq" {
   depends_on   = [aws_alb.alb]
-  count         = "${length(values(var.services_map))}"
+  # for_each = aws_alb_listener.alb_listener
+  for_each = aws_alb_target_group.alb_target_group
   listener_arn = aws_alb_listener.alb_listener.arn
 
   action {
     /* target_group_arn = aws_alb_target_group.rabbitmq_alb_target_group.arn */
-    target_group_arn = "${element(aws_alb_target_group.alb_target_group.*.arn, count.index)}"
+    # target_group_arn = element(aws_alb_target_group.alb_target_group.*.arn, count.index)
+    target_group_arn = each.value.arn
     type             = "forward"
   }
   condition {
     host_header {
-    /* field = "host-header" */
+      /* field = "host-header" */
       /* values = ["${lower(local.ecs_service_name)}.${data.terraform_remote_state.platform.outputs.ecs_domain_name}"] */
       /* values = ["${each.value.tags.Name}.${local.domain_name}"] */
       # values = ["${lower(local.ecs_service_name)}.vama-dsl.com"]
       #  values = ["${element(values(var.services_map), count.index)}.${var.domain}"]
-      values = ["${element(keys(var.services_map), count.index)}.${local.domain_name}"]
+      # values = ["${element(keys(var.services_map), count.index)}.${local.domain_name}"]
+      values = ["${each.key}.${local.domain_name}"] 
     }
   }
 }
@@ -84,21 +114,31 @@ resource "aws_lb_listener" "redirect-http-https" {
   }
 }
 
-/* 
-resource "aws_lb_target_group_attachment" "test" {
-  target_group_arn = aws_alb_target_group.alb_target_group.arn
-  target_id        = aws_instance.nginx.id
-  port             = 8080
-} */
-
 resource "aws_alb_target_group_attachment" "test" {
-  count         = "${length(values(var.services_map))}"
-  target_group_arn = "${element(aws_alb_target_group.alb_target_group.*.arn, count.index)}"
-  /* target_id        = "${element(var.instance_list, count.index)}"  only for multiple instaces*/
-  target_id        = aws_instance.nginx.id
-  port             = "${element(values(var.services_map), count.index)}"
+  for_each = aws_alb_target_group.alb_target_group
+  target_group_arn = each.value.arn
+  target_id = aws_instance.nginx.id
+  port = each.value.port
 }
+
+# resource "aws_alb_target_group_attachment" "test" {
+#   count            = length(values(var.services_map))
+#   target_group_arn = element(aws_alb_target_group.alb_target_group.*.arn, count.index)
+#   /* target_id        = "${element(var.instance_list, count.index)}"  only for multiple instaces*/
+#   target_id = aws_instance.nginx.id
+#   port      = element(values(var.services_map), count.index)
+# }
 
 output "aws_alb" {
   value = aws_alb.alb.dns_name
+}
+output "aws_target" {
+  # value = aws_alb_target_group.alb_target_group
+  # value = {for name, role in aws_alb_target_group.alb_target_group: name => role }
+  # for_each = aws_alb_target_group.alb_target_group
+  # value = aws_alb_target_group.alb_target_group
+  # value = {for name, role in aws_alb_target_group.alb_target_group["nginx1"]: name => role.health_check }
+  # value = lookup(aws_alb_target_group.alb_target_group, "nginx1")
+  # value = aws_alb_target_group.alb_target_group["nginx"]
+  value = {for m, r in aws_alb_target_group.alb_target_group : m => r }
 }

@@ -9,9 +9,9 @@ data "aws_acm_certificate" "ecs_domain_certificate" {
   most_recent = true
 }
 resource "aws_route53_record" "ecs_load_balancer_record" {
-  count = length(values(var.services_map))
+  count         = "${length(values(var.services_map))}"
   /* name    = "${local.domain_host_name}.${local.domain_name}" */
-  name    = "${element(keys(var.services_map), count.index)}.${local.domain_name}"
+  name = "${element(keys(var.services_map), count.index)}.${local.domain_name}"
   type    = "A"
   zone_id = data.aws_route53_zone.ecs_domain.zone_id
 

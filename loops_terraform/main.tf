@@ -1,3 +1,13 @@
+data "aws_route53_zone" "ecs_domain" {
+  name         = local.domain_name
+  private_zone = false
+}
+
+data "aws_acm_certificate" "ecs_domain_certificate" {
+  domain      = "*.${local.domain_name}"
+  types       = ["AMAZON_ISSUED"]
+  most_recent = true
+}
 locals {
   name = "django"
   vpc_id          = "vpc-028b7724ac0331752"
@@ -40,13 +50,11 @@ variable "hosts" {
   description = "This hosts will be added as dns names and rules for forwarding traffic if you are not sure ask jain"
   /* type        = list(map(string)) */
   default = {
-      "nginx1" = {
-        "tgname" = "nginx"
+      "nginx" = {
         "tgport"    = "80"
         "tgproto"  = "HTTP"
       },
-      "rabbit1" = {
-        "tgname" = "rabbit"
+      "rabbit" = {
         "tgport"    = "15672"
         "tgproto"  = "HTTP"
       }
@@ -95,28 +103,10 @@ resource "aws_alb" "alb" {
   #   }
 }
 
-resource "aws_alb_listener" "alb_listener" {
-  for_each = aws_alb_target_group.alb_target_group
-  load_balancer_arn = aws_alb.alb.arn
-  port              = 443
-  protocol          = "HTTPS"
-  /* ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01" */
-  ssl_policy = "ELBSecurityPolicy-TLS-1-2-Ext-2018-06"
-    /* ssl_policy = "" */
-  // certificate_arn   = data.aws_acm_certificate.ecs_domain_certificate.arn
-  certificate_arn   = data.aws_acm_certificate.ecs_domain_certificate.arn
-
-  default_action {
-      /* target_group_arn = aws_alb_target_group.alb_target_group.arn */
-    target_group_arn = each.value["nginx"].arn
-    type             = "forward"
-  }
-}
-
 resource "aws_alb_target_group" "alb_target_group" {
   for_each = var.hosts
   /* count        = "${length(var.hosts)}" */
-  name         = "${each.value.tgname}-Dev"
+  name         = "${each.key}-Dev"
   port         = "${each.value.tgport}"
   protocol     = "${each.value.tgproto}"
   vpc_id   = local.vpc_id
@@ -130,10 +120,36 @@ resource "aws_alb_target_group" "alb_target_group" {
     path                = "/"
   }
   tags = {
-    Name      = each.value.tgname
+    Name      = each.key
     Port = each.value.tgport
   }
 }
+
+resource "aws_alb_listener" "alb_listener" {
+   depends_on = [aws_alb_target_group.alb_target_group]
+  # for_each = aws_alb_target_group.alb_target_group["nginx1"]
+  
+  load_balancer_arn = aws_alb.alb.arn
+  port              = 443
+  protocol          = "HTTPS"
+  /* ssl_policy        = "ELBSecurityPolicy-TLS-1-2-2017-01" */
+  ssl_policy = "ELBSecurityPolicy-TLS-1-2-Ext-2018-06"
+    /* ssl_policy = "" */
+  // certificate_arn   = data.aws_acm_certificate.ecs_domain_certificate.arn
+  certificate_arn   = data.aws_acm_certificate.ecs_domain_certificate.arn
+
+
+  default_action {
+    #  target_group_arn = "${aws_alb_target_group.alb_target_group[each.key[nginx1]].arn}" 
+    #  target_group_arn = lookup(aws_alb_target_group.alb_target_group, "nginx1")
+    target_group_arn = aws_alb_target_group.alb_target_group["nginx"].arn
+    # target_group_arn = [for m in aws_alb_target_group.alb_target_group : m if contains(keys(m), "nginx")  ]
+    type             = "forward"
+  }
+}
+
+
+
 
 
 resource "aws_alb_listener_rule" "alb_listener_rabbitmq" {
@@ -157,17 +173,11 @@ resource "aws_alb_listener_rule" "alb_listener_rabbitmq" {
   }
 }
 
-
-
-output "nginx_ip" {
-  value = aws_instance.nginx.public_ip
-}
-
 /* output "anible_playbook_run_command" {
   value = provisioner.local-exec
 } */
 
-/* ansible-playbook  -i 18.138.254.157, --private-key vamakp.pem nginx.yaml */
+# /* ansible-playbook  -i 18.138.254.157, --private-key vamakp.pem nginx.yaml */
 
 resource "aws_lb_listener" "redirect-http-https" {
   load_balancer_arn = aws_alb.alb.arn
@@ -186,16 +196,16 @@ resource "aws_lb_listener" "redirect-http-https" {
   }
 }
 
-data "aws_route53_zone" "ecs_domain" {
-  name         = local.domain_name
-  private_zone = false
-}
+# data "aws_route53_zone" "ecs_domain" {
+#   name         = local.domain_name
+#   private_zone = false
+# }
 
-data "aws_acm_certificate" "ecs_domain_certificate" {
-  domain      = "*.${local.domain_name}"
-  types       = ["AMAZON_ISSUED"]
-  most_recent = true
-}
+# data "aws_acm_certificate" "ecs_domain_certificate" {
+#   domain      = "*.${local.domain_name}"
+#   types       = ["AMAZON_ISSUED"]
+#   most_recent = true
+# }
 resource "aws_route53_record" "ecs_load_balancer_record" {
   name    = "${local.domain_host_name}.${local.domain_name}"
   type    = "A"
@@ -210,4 +220,17 @@ resource "aws_route53_record" "ecs_load_balancer_record" {
 
 output "route53" {
   value = data.aws_acm_certificate.ecs_domain_certificate
+}
+output "nginx_ip" {
+  value = aws_instance.nginx.public_ip
+}
+output "aws_target" {
+  # value = aws_alb_target_group.alb_target_group
+  # value = {for name, role in aws_alb_target_group.alb_target_group: name => role }
+  # for_each = aws_alb_target_group.alb_target_group
+  # value = aws_alb_target_group.alb_target_group
+  # value = {for name, role in aws_alb_target_group.alb_target_group["nginx1"]: name => role.health_check }
+  # value = lookup(aws_alb_target_group.alb_target_group, "nginx1")
+  # value = aws_alb_target_group.alb_target_group["nginx"]
+  value = {for m, r in aws_alb_target_group.alb_target_group : m => r }
 }

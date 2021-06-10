@@ -17,7 +17,7 @@ locals {
   domain_name      = "aipo-imda.net"
   domain_host_name = "rabbitmq"
   backend_proto    = "HTTP"
-  health_check = {
+  health_check =  {
     healthy_threshold   = 2
     unhealthy_threshold = 5
     timeout             = 5
@@ -26,11 +26,10 @@ locals {
   }
 }
 variable "services_map" {
-  default = {
-    "nginx"  = "8080"
-    "rabbit" = "15672"
-    "rabbitmq" = "5672"
-  }
+   default = {
+    "nginx" = "8080"
+    "rabbit"    = "15672"
+  } 
 }
 
 provider "aws" {
@@ -68,7 +67,7 @@ resource "aws_instance" "nginx" {
     command = "ansible-playbook  -i ${aws_instance.nginx.public_ip}, --private-key ${local.private_key_path} nginx.yaml"
   }
   provisioner "local-exec" {
-    command = "echo ssh -i vamakp.pem ubuntu@${aws_instance.nginx.public_ip} > ubuntu.sh"
+    command =  "echo ssh -i vamakp.pem ubuntu@${aws_instance.nginx.public_ip} > ubuntu.sh"
   }
 }
 

@@ -15,6 +15,23 @@ variable "hosts_j" {
   }
 }
 
+variable "hosts_k" {
+  description = "This hosts will be added as dns names and rules for forwarding traffic"
+  /* type        = list(map(string)) */
+  default = {
+      "nginx1" = {
+        "tgname" = "nginx"
+        "tgport"    = "80"
+        /* "tgproto"  = "HTTP" */
+      },
+      "rabbit1" = {
+        "tgname" = "rabbit"
+        "tgport"    = "15672"
+        /* "tgproto"  = "HTTP" */
+      }
+  }
+}
+
 resource "null_resource" "heights" {
     for_each = var.hosts_j
     triggers = {
