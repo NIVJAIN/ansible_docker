@@ -43,7 +43,8 @@ resource "aws_security_group" "nginx" {
     from_port   = 5672
     to_port     = 5672
     protocol    = "tcp"
-    security_groups = [aws_security_group.alb.id]
+    # security_groups = [aws_security_group.alb.id]
+    cidr_blocks = formatlist("%s/32", [for eni in data.aws_network_interface.example_lb : eni.private_ip])
   }
   ingress {
     from_port   = 15672

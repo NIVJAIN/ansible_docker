@@ -38,10 +38,12 @@ resource "aws_lb" "nlb_load_balancer" {
 #   name                              = "test-network-lb" #can also be obtained from the variable nlb_config
   name = lookup(local.nlb_config,"name")
   load_balancer_type                = "network"
-  subnet_mapping {
-    subnet_id     = lookup(local.nlb_config,"subnet")
-    # allocation_id = aws_eip.eip_nlb.id
-  }
+  # subnet_mapping {
+  #   # subnet_id     = lookup(local.nlb_config,"subnet")
+  #   subnet_id     = [local.public_subnets]
+  #   # allocation_id = aws_eip.eip_nlb.id
+  # }
+  subnets     = local.public_subnets
   tags = {
     Environment = lookup(local.nlb_config,"environment")
   }
@@ -91,5 +93,19 @@ resource "aws_route53_record" "nlb_loadbalancer" {
     evaluate_target_health = false
     name                   = aws_lb.nlb_load_balancer.dns_name
     zone_id                = aws_lb.nlb_load_balancer.zone_id
+  }
+}
+
+data "aws_network_interface" "example_lb" {
+  for_each = toset(local.public_subnets)
+
+  filter {
+    name   = "description"
+    values = ["ELB ${aws_lb.nlb_load_balancer.arn_suffix}"]
+  }
+
+  filter {
+    name   = "subnet-id"
+    values = [each.value]
   }
 }
