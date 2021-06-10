@@ -3,7 +3,7 @@ variable "hosts2" {
   /* type        = list(map(string)) */
   default = {
     "nginx" = {
-      "tgport"  = "80"
+      "tgport"  = "8080"
       "tgproto" = "HTTP"
     },
     "rabbit" = {

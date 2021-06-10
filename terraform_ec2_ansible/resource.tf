@@ -24,6 +24,24 @@ locals {
     interval            = 10
     path                = "/"
   }
+  nlb_config = {
+    name            = "${local.name}-NLB"
+    internal        = "false"
+    environment     = "test"
+    subnet          = local.subnet_id
+    nlb_vpc_id      = local.vpc_id
+  }
+  tg_config = {
+    name                              = "terraform-nlb-tg"
+    target_type                       = "instance"
+    health_check_protocol             = "TCP"
+    tg_vpc_id                         = local.vpc_id
+    target_id1                        = aws_instance.nginx.id
+  }
+ forwarding_config = {
+   5672        =   "TCP"
+ }
+
 }
 variable "services_map" {
   default = {
