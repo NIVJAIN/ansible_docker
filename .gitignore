@@ -11,3 +11,5 @@ vamakp.pem
 /loops_terraform/.terra*
 /loops_terraform/terra*
 /tut-tf-loop/.terra*
+/ec2/terraform*
+/ec2/.terraform*
