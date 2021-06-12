@@ -52,6 +52,13 @@ locals {
       "tgproto" = "HTTP"
     }
   }
+
+  # services_map = {
+  #   "nginx"    = "8080"
+  #   "rabbit"   = "15672"
+  #   "rabbitmq" = "5672"
+  # }
+
 }
 variable "services_map" {
   default = {
