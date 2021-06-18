@@ -32,6 +32,7 @@ locals {
   instance_type    = "t2.micro"
   ssh_username     = "ubuntu"
   key_name         = "vamakp"
+  root_volume_size = "20"
   private_key_path = file("${path.module}/vamakp.pem")
   # ansible_playbook = "./nginx_ansible.yaml"
   # private_key_path = "../../launch_ec2/vamakp.pem"
@@ -94,6 +95,7 @@ module "s3" {
   ssh_username     = local.ssh_username
   key_name         = local.key_name
   private_key_path = local.private_key_path
+  root_volume_size = local.root_volume_size
   instance_name    = local.instance_name
   default_tags = local.default_tags
   public_subnets           = local.public_subnets
@@ -129,11 +131,56 @@ resource "null_resource" "test_box" {
   command = "ansible-playbook  -i ${module.s3.nginx_ip}, --private-key vamakp.pem nginx.yaml"
 
 }
+  # provisioner "local-exec" {
+  #   # command = "echo ssh -i vamakp.pem ubuntu@${module.s3.nginx_ip} > ubuntu.sh"
+  # }
+
   provisioner "local-exec" {
-    command = "echo ssh -i vamakp.pem ubuntu@${module.s3.nginx_ip} > ubuntu.sh"
+    command = <<EOT
+       "echo ssh -i vamakp.pem ubuntu@${module.s3.nginx_ip} > ubuntu.sh"
+       "# ansible-playbook -i ${module.s3.nginx_ip}, --user ubuntu --private-key vamakp.pem nginx.yaml > ubuntu.sh"
+    EOT
+  
   }
+# provisioner "local-exec" { 
+#   interpreter = ["/bin/bash" ,"-c"]
+#   command = <<-EOT
+#     exec "command1"
+#     exec "command2"
+#   EOT
+# }
+# provisioner "local-exec" {
+#     command = <<EOT
+#       echo Host ${aws_instance.bastion.public_ip} >> ${var.local_ssh_config};
+#       echo IdentityFile ${var.local_identity_file} >> ${var.local_ssh_config}
+#    EOT
+# }
+
+
 }
+
+
+# resource "null_resource" "ProvisionRemoteHostsIpToAnsibleHosts" {
+#   count = "${var.instance_count}"
+#   connection {
+#     type = "ssh"
+#     user = "${var.ssh_user_name}"
+#     host = "${element(aws_instance.myInstanceAWS.*.public_ip, count.index)}"
+#     private_key = "${file("${var.ssh_key_path}")}"
+#   }
+#   provisioner "remote-exec" {
+#     inline = [
+#       "sudo yum update -y",
+#       "sudo yum install python-setuptools python-pip -y",
+#       "sudo pip install httplib2"
+#     ]
+#   }
+#   provisioner "local-exec" {
+#     commandgi = "echo ${element(aws_instance.myInstanceAWS.*.public_ip, count.index)} >> hosts"
+#   }
+# }
 
 # ansible-playbook -i 18.138.58.120, --user ubuntu --private-key vamakp.pem nginx.yaml
 
 #  terraform taint null_resource.ModifyApplyAnsiblePlayBook
+# terraform taint null_resource.test_box

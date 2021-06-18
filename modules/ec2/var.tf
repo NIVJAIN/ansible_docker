@@ -183,3 +183,8 @@ variable "ansible_playbook" {
   description = "ansible playbook file name"
   default = ""
 }
+
+variable "root_volume_size" {
+  default = "8"
+  description = "name of the ec2 instance"
+}

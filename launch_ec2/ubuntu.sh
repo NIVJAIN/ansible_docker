@@ -1,1 +1,1 @@
-ssh -i vamakp.pem ubuntu@13.250.13.228
+ssh -i vamakp.pem ubuntu@54.151.197.87

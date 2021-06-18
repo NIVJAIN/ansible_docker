@@ -16,6 +16,13 @@ resource "aws_alb" "alb" {
   #     bucket = "${var.s3_bucket}"    
   #     prefix = "ELB-logs"  
   #   }
+    lifecycle {
+    ignore_changes = [
+      # Ignore changes to tags, e.g. because a management agent
+      # updates these based on some ruleset managed elsewhere.
+      tags,
+    ]
+  }
 }
 
 

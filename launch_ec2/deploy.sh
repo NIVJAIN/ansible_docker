@@ -10,10 +10,31 @@ elif [ "$1" = "plan" ];then
 elif [ "$1" = "apply" ];then
     terraform init -backend-config=${CONFIG}
     terraform apply  -auto-approve
+elif [ "$1" = "taint" ];then
+    echo "By using the taint command, we can just run the Ansible portion not touching (create or destroy) the AWS instance. For example, we can run terraform apply after just tainting a Null resource "
+    terraform taint null_resource.test_box
+    terraform apply --auto-approve
 elif [ "$1" = "destroy" ];then
     terraform init -backend-config=${CONFIG}
     terraform destroy  -auto-approve
 fi
+
+
+# ubuntu@ip-100-114-12-235:~$ blkid
+# /dev/xvda1: LABEL="cloudimg-rootfs" UUID="e8070c31-bfee-4314-a151-d1332dc23486" TYPE="ext4" PARTUUID="5198cbc0-01"
+#    lsblk
+#    lsblk -a
+#    lsblk -b
+#    lsblk -d
+#    lsblk -h
+#    lsblk -z
+#    lsblk -i
+#    lsblk -m
+#    lsblk -o SIZE,NAME,MOUNTPOINT
+#    lsblk -dn
+# sudo resize2fs /dev/xvda1 this is for root volume extension after webconsole modify volume
+
+# sudo mkfs -t xfs /dev/xvdf
 
 
 # #!/bin/sh

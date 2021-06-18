@@ -3,10 +3,13 @@ provider "aws" {
    default_tags {
    tags = var.default_tags
  }
-  ignore_tags {
-    keys = ["LastScanned"]
-  }
+  # ignore_tags {
+  #   keys = ["LastScanned"]
+  # }
 }
+
+
+
 # terraform {
 #   backend "s3" {}
 # }
@@ -22,12 +25,28 @@ resource "aws_instance" "nginx" {
   vpc_security_group_ids             = [aws_security_group.nginx.id]
   key_name                    = var.key_name
 
+  root_block_device {
+      volume_type = "gp2"
+      volume_size = var.root_volume_size
+      tags = {
+        Name = "${var.project_name}-ROOT-BLK"
+      }
+  }
+
  tags = merge(
     var.default_tags,
     {
-     Name = "RabbitMQ-ROS"
+     Name = "{var.project_name}-EC2"
     }
   )
+  lifecycle {
+    ignore_changes = [
+      # Ignore changes to tags, e.g. because a management agent
+      # updates these based on some ruleset managed elsewhere.
+      tags,
+    ]
+  }
+
   provisioner "remote-exec" {
     inline = ["echo 'Wait until SSH is ready'"]
     # inline = [
@@ -43,6 +62,8 @@ resource "aws_instance" "nginx" {
       host        = aws_instance.nginx.public_ip
     }
   }
+
+
   # provisioner "local-exec" {
   #   command = "ansible-playbook  -i ${aws_instance.nginx.public_ip}, --private-key ${var.private_key_path} nginx.yaml"
   # }
@@ -50,6 +71,51 @@ resource "aws_instance" "nginx" {
   #   command = "echo ssh -i vamakp.pem ubuntu@${aws_instance.nginx.public_ip} > ubuntu.sh"
   # }
 }
+
+
+# resource "aws_ebs_volume" "data-vol" {
+#   depends_on        = [aws_instance.nginx]
+#   availability_zone = "${aws_instance.nginx.availability_zone}"
+#   type       = "gp2"
+#   size              = "15"
+# tags = merge(
+#     var.default_tags,
+#     {
+#      Name = "Terraform-EBS"
+#     }
+#   )
+#   lifecycle {
+#     ignore_changes = [
+#       # Ignore changes to tags, e.g. because a management agent
+#       # updates these based on some ruleset managed elsewhere.
+#       tags,
+#     ]
+#   }
+# }
+
+
+# resource "aws_volume_attachment" "good-morning-vol" {
+# #  device_name = "/dev/sdh"
+#  device_name = "/dev/xvdh"
+#  volume_id = "${aws_ebs_volume.data-vol.id}"
+#  instance_id = "${aws_instance.nginx.id}"
+#    skip_destroy = false
+#   force_detach = true
+# }
+
+
+# // volumes.tf
+# resource "aws_ebs_volume" "mysql" {
+#   availability_zone = "ap-southeast-1"
+#   size = 10
+#   type = "gp2"
+#   tags {
+#     Name      = "mysql"
+#     Role      = "db"
+#     Terraform = "true"
+#     FS        = "xfs"
+#   }
+# }
 
 # resource "null_resource" "test_box" {
 #   depends_on = [aws_instance.nginx]
