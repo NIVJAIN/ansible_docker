@@ -74,6 +74,12 @@ resource "aws_security_group" "nginx" {
     protocol        = "tcp"
     security_groups = [aws_security_group.alb.id]
   }
+    ingress {
+    from_port       = 5000
+    to_port         = 5000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
   ingress {
     from_port   = 22
     to_port     = 22

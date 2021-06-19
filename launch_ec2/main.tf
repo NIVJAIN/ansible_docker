@@ -29,10 +29,10 @@ locals {
   vpc_id           = "vpc-028b7724ac0331752"
   ami_id           = "ami-0d058fe428540cd89"
   subnet_id        = "subnet-08b1ad0d7506dca3f"
-  instance_type    = "t2.micro"
+  instance_type    = "t2.medium"
   ssh_username     = "ubuntu"
   key_name         = "vamakp"
-  root_volume_size = "20"
+  root_volume_size = "80"
   private_key_path = file("${path.module}/vamakp.pem")
   # ansible_playbook = "./nginx_ansible.yaml"
   # private_key_path = "../../launch_ec2/vamakp.pem"
@@ -68,6 +68,14 @@ locals {
     },
     "rabbit" = {
       "tgport"  = "15672"
+      "tgproto" = "HTTP"
+    },
+    "nodeapp" = {
+      "tgport"  = "3000"
+      "tgproto" = "HTTP"
+    },
+    "service" = {
+      "tgport"  = "5000"
       "tgproto" = "HTTP"
     }
   }
@@ -122,32 +130,61 @@ resource "null_resource" "test_box" {
   depends_on = [
     module.s3
   ]
-  # provisioner "local-exec" {
+
+#   provisioner "local-exec" {
+#   # command = "ansible-playbook  -i ${module.ec2.aws_instance.nginx.public_ip}, --private-key ${local.private_key_path} nginx_ansible.yaml"
+#   # command = "ansible-playbook  -i ${module.s3.nginx_ip}, --private-key ${local.private_key_path} nginx.yaml"
+#   command = "ansible-playbook  -i ${module.s3.nginx_ip}, --private-key vamakp.pem nginx.yaml"
+#  }
+
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo "Create sh files for ec2 ssh login and running playbook during development work"
+      echo ssh -i vamakp.pem ubuntu@${module.s3.nginx_ip} > ubuntu.sh
+      echo ansible-playbook -i ${module.s3.nginx_ip}, --user ubuntu --private-key vamakp.pem nginx.yaml > run_playbook.sh
+    EOT
+  
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ # provisioner "local-exec" {
   #  command = "echo ${local.ansible_playbook}"
   # }
-  provisioner "local-exec" {
-  # command = "ansible-playbook  -i ${module.ec2.aws_instance.nginx.public_ip}, --private-key ${local.private_key_path} nginx_ansible.yaml"
-  # command = "ansible-playbook  -i ${module.s3.nginx_ip}, --private-key ${local.private_key_path} nginx.yaml"
-  command = "ansible-playbook  -i ${module.s3.nginx_ip}, --private-key vamakp.pem nginx.yaml"
 
-}
   # provisioner "local-exec" {
   #   # command = "echo ssh -i vamakp.pem ubuntu@${module.s3.nginx_ip} > ubuntu.sh"
   # }
 
-  provisioner "local-exec" {
-    command = <<EOT
-       "echo ssh -i vamakp.pem ubuntu@${module.s3.nginx_ip} > ubuntu.sh"
-       "# ansible-playbook -i ${module.s3.nginx_ip}, --user ubuntu --private-key vamakp.pem nginx.yaml > ubuntu.sh"
-    EOT
-  
-  }
+
+
 # provisioner "local-exec" { 
 #   interpreter = ["/bin/bash" ,"-c"]
 #   command = <<-EOT
 #     exec "command1"
 #     exec "command2"
 #   EOT
+#  "echo # ansible-playbook -i ${module.s3.nginx_ip}, --user ubuntu --private-key vamakp.pem nginx.yaml >> ubuntu.sh"
 # }
 # provisioner "local-exec" {
 #     command = <<EOT

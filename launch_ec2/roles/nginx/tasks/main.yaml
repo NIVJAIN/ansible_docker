@@ -122,6 +122,7 @@
   with_items:
     - { src: '{{ playbook_dir }}/docker/',dest: '{{ docker_remote_app_dir }}', mode: '0777'}
     - { src: '{{ playbook_dir }}/rabbitmq-cluster_docker_compose/',dest: '{{ rabbitmq_cluster_dir }}', mode: '0777'}
+    - { src: '{{ playbook_dir }}/node-mongo-docker/',dest: '{{ node_mongo_docker }}', mode: '0777'}
     # - { src: '{{ playbook_dir }}/docker/',dest: '{{ docker_remote_app_dir }}', mode: '0707'}
     # - { src: '{{ playbook_dir }}/docker/',dest: '{{ docker_remote_app_dir }}', mode: '0575'}
   tags:
@@ -142,5 +143,15 @@
     chdir: "{{ rabbitmq_cluster_dir }}/cluster_conf"
   tags:
     - app
+
+# Build rabbitmq cluster 3.0.19.7:15672 rabbbitmq management server loginuser:guest guest:guest pw:guest. 
+- name: Run node-mongo-dir docker-compose fiel
+  command: docker-compose up -d --build
+  args:
+    chdir: "{{ node_mongo_docker }}"
+  tags:
+    - app
+  register: "output" 
+- debug: var=output.stdout_lines
 
 
